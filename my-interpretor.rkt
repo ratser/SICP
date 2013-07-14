@@ -77,6 +77,10 @@
   (my-eval (or->if exp) env))
 (define (eval-and exp env)
   (my-eval (and->if exp) env))
+(define (eval-let exp env)
+  (my-eval (let->combination exp) env))
+(define (eval-let* exp env)
+  (my-eval (let*->nested-lets exp) env))
 
 ;;; install eval procedures for special forms
 (put-eval 'if eval-if)
@@ -88,6 +92,8 @@
 (put-eval 'cond eval-cond)
 (put-eval 'or eval-or)
 (put-eval 'and eval-and)
+(put-eval 'let eval-let)
+(put-eval 'let* eval-let*)
 
 ;;; represent expressions
 (define (get-tag exp) (car exp))
@@ -191,6 +197,45 @@
        (first-exp seq)
        (expand-and (rest-exps seq))
        'false)))
+(define (let-variables exp)
+  (map car (cadr exp)))
+(define (let-exps exp)
+  (map cadr (cadr exp)))
+(define (let-body exp)
+  (cddr exp))
+(define (let->combination exp)
+  (cons
+   (make-lambda (let-variables exp)
+                (let-body exp))
+   (let-exps exp)))
+(define (make-let bindings body)
+  (cons 'let (cons bindings body)))
+(define (let*-bindings exp)
+  (cadr exp))
+(define (first-binding bindings)
+  (list (car bindings)))
+(define (rest-bindings bindings)
+  (cdr bindings))
+(define (last-binding? bindings)
+  (null? (cdr bindings)))
+(define (let*-body exp)
+  (cddr exp))
+(define (let*->nested-lets exp)
+  (let*-expand (let*-bindings exp)
+               (let*-body exp)))
+(define (let*-enpand bindings body)
+  (if (last-binding? bindings)
+      (make-let bindings body)
+      (make-let (first-binding bindings)
+                (let*-expand (rest-bindings bindings)
+                             body))))
+
+;;; Evaluator data structure ;;;
+(define (true? x)
+  (not (eq? x false)))
+(define (false? x)
+  (eq? x false))
+
 
 
     
