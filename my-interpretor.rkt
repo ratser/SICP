@@ -332,6 +332,7 @@
         (list 'symbol? (bool-convert symbol?))
         (list 'eq? (bool-convert eq?))
         (list 'list list)
+        (list '= (bool-convert =))
         (list '+ +)
         (list '- -)
         (list '* *)
