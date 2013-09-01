@@ -77,6 +77,8 @@
   (my-eval (or->if exp) env))
 (define (eval-and exp env)
   (my-eval (and->if exp) env))
+(define (eval-not exp env)
+  (my-eval (not->if exp) env))
 (define (eval-let exp env)
   (my-eval (let->combination exp) env))
 (define (eval-let* exp env)
@@ -92,6 +94,7 @@
 (put-eval 'cond eval-cond)
 (put-eval 'or eval-or)
 (put-eval 'and eval-and)
+(put-eval 'not eval-not)
 (put-eval 'let eval-let)
 (put-eval 'let* eval-let*)
 
@@ -207,17 +210,49 @@
        (first-exp seq)
        (expand-and (rest-exps seq))
        'false)))
+(define (not-exp exp)
+  (cadr exp))
+(define (not->if exp)
+  (make-if
+   (not-exp exp)
+   'false
+   'true))
 (define (let-variables exp)
   (map car (cadr exp)))
 (define (let-exps exp)
   (map cadr (cadr exp)))
 (define (let-body exp)
   (cddr exp))
+
+(define (named-let? exp)
+  (not (pair? (cadr exp))))
+(define (let-name exp)
+  (cadr exp))
+(define (let-variables-named exp)
+  (map car (caddr exp)))
+(define (let-exps-named exp)
+  (map cadr (caddr exp)))
+(define (let-body-named exp)
+  (cdddr exp))
+(define (make-definition var exp)
+  (list 'define var exp))
+
 (define (let->combination exp)
-  (cons
-   (make-lambda (let-variables exp)
-                (let-body exp))
-   (let-exps exp)))
+  (if (named-let? exp)
+      (cons
+       (make-lambda (let-variables-named exp)
+                    (cons
+                     (make-definition
+                      (let-name exp)
+                      (make-lambda (let-variables-named exp)
+                                   (let-body-named exp)))
+                     (let-body-named exp)))
+       (let-exps-named exp))
+      (cons
+       (make-lambda (let-variables exp)
+                    (let-body exp))
+       (let-exps exp))))
+
 (define (make-let bindings body)
   (cons 'let (cons bindings body)))
 (define (let*-bindings exp)
