@@ -334,13 +334,18 @@
       (list (make-let
              (extract-vars defs)
              (append (extract-vals defs) rest)))))
+
+;exercise 4.17
+;(define (make-new-body defs rest)
+;  (append defs rest))
+
 (define (make-quoted x)
   (list 'quote x))
 (define (make-assignment var val)
   (list 'set! var val))    
 (define (scan-out-defines seq)
   (split seq make-new-body))
-;;;
+
 (define (make-procedure parameters body env)
   (list 'procedure parameters (scan-out-defines body) env))
 
