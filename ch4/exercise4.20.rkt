@@ -1,0 +1,27 @@
+;;; exercise 4.20
+
+(define (letrec-variables exp)
+  (map car (cadr exp)))
+(define (letrec-exps exp)
+  (map cadr (cadr exp)))
+(define (letrec-body exp)
+  (cddr exp))
+
+(define (letrec->let exp)
+  (define (make-let-var vars)
+    (map (lambda (var)
+           (list var (make-quoted 'unassigned)))
+         vars))
+  (define (make-let-body vars exps body)
+    (append (map (lambda (var exp)
+                   (make-assignment var exp))
+                 vars exps)
+            body))
+  (make-let (make-let-var (letrec-variables exp))
+            (make-let-body (letrec-variables exp)
+                           (letrec-exps exp)
+                           (letrec-body exp))))
+(define (eval-letrec exp env)
+  (my-eval (letrec->let exp) env))
+
+(put-eval 'letrec eval-letrec)

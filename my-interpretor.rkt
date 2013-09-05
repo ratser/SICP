@@ -104,7 +104,10 @@
           (scan vars vals (lambda (new-vars new-vals)
                             (set-car! frame new-vars)
                             (set-cdr! frame new-vals)))))
-      (error "Invalid variable -- MAKE-UNBOUND!" (unbound-variable exp))))
+      (error "Invalid variable -- MAKE-UNBOUND!" (unbound-variable exp)))
+  )
+(define (eval-letrec exp env)
+  (my-eval (letrec->let exp) env))
 
 ;;; install eval procedures for special forms
 (put-eval 'if eval-if)
@@ -120,6 +123,7 @@
 (put-eval 'let eval-let)
 (put-eval 'let* eval-let*)
 (put-eval 'make-unbound! eval-make-unbound!)
+(put-eval 'letrec eval-letrec)
 ;;; represent expressions
 (define (get-tag exp) (car exp))
 (define (self-evaluating? exp)
@@ -297,6 +301,27 @@
       (make-let (first-binding bindings)
                 (list (let*-expand (rest-bindings bindings)
                              body)))))
+;;; exercise 4.20
+(define (letrec-variables exp)
+  (map car (cadr exp)))
+(define (letrec-exps exp)
+  (map cadr (cadr exp)))
+(define (letrec-body exp)
+  (cddr exp))
+(define (letrec->let exp)
+  (define (make-let-var vars)
+    (map (lambda (var)
+           (list var (make-quoted 'unassigned)))
+         vars))
+  (define (make-let-body vars exps body)
+    (append (map (lambda (var exp)
+                   (make-assignment var exp))
+                 vars exps)
+            body))
+  (make-let (make-let-var (letrec-variables exp))
+            (make-let-body (letrec-variables exp)
+                           (letrec-exps exp)
+                           (letrec-body exp))))
 
 ;;; Evaluator data structure ;;;
 (define (true? x)
