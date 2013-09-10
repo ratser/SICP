@@ -58,11 +58,7 @@
 ;;; procedures for lazy evaluation
 (define (actual-value exp env)
   (force-it (my-eval exp env)))
-;(define (force-it obj)
-;  (if (thunk? obj)
-;      (actual-value (thunk-exp obj)
-;                    (thunk-env obj))
-;      obj))
+
 (define (delay-it exp env)
   (list 'thunk exp env))
 (define (thunk? obj)
@@ -73,6 +69,7 @@
   (tagged-list? obj 'evaluated-thunk))
 (define (thunk-value evaluated-thunk)
   (cadr evaluated-thunk))
+
 (define (force-it obj)
   (cond ((thunk? obj)
          (let ((result (actual-value
@@ -367,50 +364,13 @@
 (define (false? x)
   (eq? x 'false))
 
-;;; exercise 4.16
-(define (split seq f)
-  (let ((exp (first-exp seq)))
-    (if (last-exp? seq)
-        (if (definition-exp? exp)
-            (f seq '())
-            (f '() seq))
-        (if (definition-exp? exp)
-            (split (rest-exps seq)
-                   (lambda (defs other)
-                     (f (cons exp defs) other)))
-            (split (rest-exps seq)
-                   (lambda (defs other)
-                     (f defs (cons exp other))))))))
-(define (definition-exp? exp)
-  (eq? (car exp) 'define)) 
-(define (make-new-body defs rest)
-  (define (extract-vars defs)
-    (map (lambda (exp) 
-           (list (definition-variable exp) (make-quoted '*unassigned*)))
-         defs))
-  (define (extract-vals defs)
-    (map (lambda (exp)
-           (make-assignment (definition-variable exp) (definition-value exp)))
-         defs))
-  (if (null? defs)
-      rest
-      (list (make-let
-             (extract-vars defs)
-             (append (extract-vals defs) rest)))))
-
-;exercise 4.17
-;(define (make-new-body defs rest)
-;  (append defs rest))
-
 (define (make-quoted x)
   (list 'quote x))
 (define (make-assignment var val)
   (list 'set! var val))    
-(define (scan-out-defines seq)
-  (split seq make-new-body))
 
 (define (make-procedure parameters body env)
-  (list 'procedure parameters (scan-out-defines body) env))
+  (list 'procedure parameters body env))
 
 (define (compound-procedure? p)
   (tagged-list? p 'procedure))
@@ -479,57 +439,6 @@
             (else (scan (cdr vars) (cdr vals)))))
     (scan (frame-variables frame)
           (frame-values frame))))
-
-;;;; exercise 4.11
-;
-;(define (enclosing-environment env) (cdr env))
-;(define (first-frame env) (car env))
-;(define the-empty-environment '())
-;
-;(define (make-frame variables values)
-;  (map cons variables values))
-;
-;(define (add-binding-to-env! var val env)
-;  (set-car! env (cons (cons var val) (first-frame env))))
-;
-;(define (extend-environment vars vals base-env)
-;  (if (= (length vars) (length vals))
-;      (cons (make-frame vars vals) base-env)
-;      (error "The number of arguments and values is mismatched")))
-;(define (lookup-variable-value var env)
-;  (define (env-loop env)
-;    (define (scan frame)
-;      (cond ((null? frame)
-;             (env-loop (enclosing-environment env)))
-;            ((eq? var (caar frame))
-;             (cdar frame))
-;            (else (scan (cdr frame)))))
-;    (if (eq? env the-empty-environment)
-;        (error "Unbound variable" var)
-;        (scan (first-frame env))))
-;  (env-loop env))
-;
-;(define (set-variable-value! var val env)
-;  (define (env-loop env)
-;    (define (scan frame)
-;      (cond ((null? frame)
-;             (env-loop (enclosing-environment env)))
-;            ((eq? var (caar frame))
-;             (set-cdr! (car frame) val))
-;            (else (scan (cdr frame)))))
-;    (if (eq? env the-empty-environment)
-;        (error "Unbound variable -- SET!" var)
-;        (scan (first-frame env))))
-;  (env-loop env))
-;
-;(define (define-variable! var val env)
-;  (define (scan frame)
-;    (cond ((null? frame)
-;           (add-binding-to-env! var val env))
-;          ((eq? var (caar frame))
-;           (set-cdr! (car frame) val))
-;          (else (scan (cdr frame)))))
-;    (scan (first-frame env)))
 
 ;;;set up global environment with primitives;;;
 (define (setup-environment)
