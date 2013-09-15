@@ -100,8 +100,12 @@
     (definition-variable exp)
     (my-eval (definition-value exp) env)
     env))
+;;; exercise 4.33
 (define (eval-quoted exp env)
-  (text-of-quotation exp))
+  (let ((text (text-of-quotation exp)))
+    (if (not (pair? text))
+        text
+        (my-eval (make-lazy-list text) env))))
 (define (eval-begin exp env)
   (eval-sequence (begin-actions exp) env))
 (define (eval-lambda exp env)
@@ -165,11 +169,18 @@
 (define (self-evaluating? exp)
   (cond ((number? exp) #t)
         ((string? exp) #t)
+        ((null? exp) #t)
         (else #f)))
 (define (variable? exp)
   (symbol? exp))
+;;; exercise 4.33
 (define (text-of-quotation exp)
   (cadr exp))
+(define (make-lazy-list text)
+  (if (null? text)
+      '()
+      (list 'cons (make-quoted (car text)) (make-lazy-list (cdr text)))))
+
 (define (if-predicate exp) (cadr exp))
 (define (if-consequent exp) (caddr exp))
 (define (if-alternative exp)
@@ -460,9 +471,7 @@
         'true
         'false)))
 (define primitive-procedures
-  (list (list 'car car)
-        (list 'cdr cdr)
-        (list 'cons cons)
+  (list 
         (list 'null? (bool-convert null?))
         (list 'pair? (bool-convert pair?))
         (list 'number? (bool-convert number?))
@@ -486,12 +495,12 @@
   (apply (primitive-implementation proc) args))
 
 ;;;prompt interface;;;
-(define input-prompt "my-eval input:")
-(define output-prompt "my-eval value:")
+(define input-prompt "lazy-eval input:")
+(define output-prompt "laxy-eval value:")
 (define (driver-loop)
   (prompt-for-input input-prompt)
   (let ((input (read)))
-    (let ((output (my-eval input the-global-environment)))
+    (let ((output (actual-value input the-global-environment)))
       (announce-output output-prompt)
       (user-print output)))
   (driver-loop))
