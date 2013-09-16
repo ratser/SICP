@@ -25,12 +25,28 @@
 
 ;;; apply procedure, named my-apply to distinguish it
 ;;; from the build in apply procedure
+;(define (my-apply proc arguments env)
+;  (cond ((primitive-procedure? proc)
+;         (apply-primitive-procedure
+;          proc 
+;          (list-of-arg-values arguments env)))
+;        ((compound-procedure? proc)
+;         (eval-sequence
+;          (procedure-body proc)
+;          (extend-environment
+;           (procedure-parameters proc)
+;           (list-of-delayed-args arguments env)
+;           (procedure-environment proc))))
+;        (else
+;         (error "Unknown procedure type -- MY-APPLY" proc))))
+;;; exercise 4.34
 (define (my-apply proc arguments env)
   (cond ((primitive-procedure? proc)
          (apply-primitive-procedure
           proc 
           (list-of-arg-values arguments env)))
-        ((compound-procedure? proc)
+        ((or (compound-procedure? proc)
+             (lazy-list? proc))
          (eval-sequence
           (procedure-body proc)
           (extend-environment
@@ -164,6 +180,21 @@
 (put-eval 'let* eval-let*)
 (put-eval 'make-unbound! eval-make-unbound!)
 (put-eval 'letrec eval-letrec)
+
+;;; exercise 4.34
+;;; install lazy-list-lambda special form
+(define (eval-lazy-list-lambda exp env)
+  (make-lazy-list-proc (lambda-parameters exp)
+                       (lambda-body exp)
+                       env))
+(define (make-lazy-list-proc parameters body env)
+  (list 'lazy-list parameters body env))
+
+(define (lazy-list? p)
+  (tagged-list? p 'lazy-list))
+
+(put-eval 'lazy-list-lambda eval-lazy-list-lambda)
+
 ;;; represent expressions
 (define (get-tag exp) (car exp))
 (define (self-evaluating? exp)
@@ -460,6 +491,23 @@
                              the-empty-environment)))
     (define-variable! 'true 'ture initial-env)
     (define-variable! 'false 'false initial-env)
+    ;;; exercise 4.34
+    ;;; install lazy cons car and cdr into the global environment
+    (define-variable!
+      'cons 
+      (list 'procedure 
+            '(x y) 
+            '((lazy-list-lambda (m) (m x y)))
+            initial-env)
+      initial-env)
+    (define-variable!
+      'car 
+      (list 'procedure '(z) '((z (lambda (x y) x))) initial-env)
+      initial-env)
+    (define-variable!
+      'cdr 
+      (list 'procedure '(z) '((z (lambda (x y) y))) initial-env)
+      initial-env)
     initial-env))
 
 (define (primitive-procedure? proc)
@@ -513,12 +561,14 @@
   (display string)
   (newline))
 (define (user-print object)
-  (if (compound-procedure? object)
-      (display (list 'compound-procedure
-                     (procedure-parameters object)
-                     (procedure-body object)
-                     '<procedure-env>))
-      (display object)))
+  (cond ((compound-procedure? object)
+         (display (list 'compound-procedure
+                        (procedure-parameters object)
+                        (procedure-body object)
+                        '<procedure-env>)))
+        ((lazy-list? object)
+         (display "function to be add"))
+         (else (display object))))
 
 (define the-global-environment (setup-environment))
 (driver-loop)
