@@ -46,7 +46,7 @@
           proc 
           (list-of-arg-values arguments env)))
         ((or (compound-procedure? proc)
-             (lazy-list? proc))
+             (lazy-list? proc)) ;exercise 4.34
          (eval-sequence
           (procedure-body proc)
           (extend-environment
@@ -64,7 +64,34 @@
                         (procedure-body object)
                         '<procedure-env>)))
         ((lazy-list? object)
-         (display "function to be add"))
+         (display (lazy-list->list object 5)))
          (else (display object))))
+
+(define (lazy-list->list object max)
+  (define (convert object max remain)
+    (define (get-car object)
+      (force-it (apply-lazy-list 
+                 (actual-value 'car the-global-environment)
+                 (list object))))
+    (define (get-cdr object)
+      (force-it (apply-lazy-list 
+                 (actual-value 'cdr the-global-environment)
+                 (list object))))
+    (define (apply-lazy-list proc args)
+      (eval-sequence
+       (procedure-body proc)
+       (extend-environment
+        (procedure-parameters proc)
+        args       ;;; note that here args have been evaluated (object)
+        (procedure-environment proc))))
+    (cond ((= remain 0)
+           (if (not (null? object))
+               '(...)
+               '()))
+          ((lazy-list? object)
+           (cons (convert (get-car object) max max)
+                 (convert (get-cdr object) max (- remain 1))))
+          (else object)))
+  (convert object max max))
 
 
