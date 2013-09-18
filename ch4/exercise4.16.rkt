@@ -65,3 +65,8 @@
 
 (define (make-procedure parameters body env)
   (list 'procedure parameters (scan-out-defines body) env))
+;;; Note:
+;;; for purpose of implementing amb interpertor (Lesson 4.3)
+;;; scan-out-defines should be installed in lambda-body
+(define (lambda-body exp)
+  (scan-out-defines (cddr exp)))

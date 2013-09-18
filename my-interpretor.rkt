@@ -156,8 +156,9 @@
       (make-lambda (cdadr exp) (cddr exp))))
 (define (lambda-parameters exp)
   (cadr exp))
+;;; exercise 4.16
 (define (lambda-body exp)
-  (cddr exp))
+  (scan-out-defines (cddr exp)))
 (define (make-lambda parameters body)
   (cons 'lambda (cons parameters body)))
 (define (begin-actions exp)
@@ -372,7 +373,7 @@
   (split seq make-new-body))
 
 (define (make-procedure parameters body env)
-  (list 'procedure parameters (scan-out-defines body) env))
+  (list 'procedure parameters body env))
 
 (define (compound-procedure? p)
   (tagged-list? p 'procedure))
