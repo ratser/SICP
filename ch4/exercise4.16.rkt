@@ -35,7 +35,7 @@
                      (f defs (cons exp other))))))))
 
 (define (definition-exp? exp)
-  (eq? (car exp) 'define)) 
+  (tagged-list? 'define exp)) 
 
 (define (make-new-body defs rest)
   (define (extract-vars defs)
