@@ -1,0 +1,33 @@
+;;; exercise 4.38
+;;; There are 5 solutions without the constraint
+
+(define (distinct? lst)
+  (cond ((null? lst) true)
+        ((null? (cdr lst)) true)
+        ((member? (car lst) (cdr lst)) false)
+        (else (distinct? (cdr lst)))))
+(define (member? item lst)
+  (cond ((null? lst) false)
+        ((equal? item (car lst)) true)
+        (else (member? item (cdr lst)))))
+
+(define (multiple-dewelling)
+  (let ((baker (amb 1 2 3 4 5))
+        (cooper (amb 1 2 3 4 5))
+        (fletcher (amb 1 2 3 4 5))
+        (miller (amb 1 2 3 4 5))
+        (smith (amb 1 2 3 4 5)))
+    (require
+     (distinct? (list baker cooper fletcher miller smith)))
+    (require (not (= baker 5)))
+    (require (not (= cooper 1)))
+    (require (not (= fletcher 5)))
+    (require (not (= fletcher 1)))
+    (require (> miller cooper))
+    (require (not (= (abs (- cooper fletcher)) 1)))
+    (list (list 'baker baker)
+          (list 'cooper cooper)
+          (list 'fletcher fletcher)
+          (list 'miller miller)
+          (list 'smith smith))))
+
