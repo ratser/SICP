@@ -1,4 +1,4 @@
-;;; exercise 4.38
+;;; exercise 4.39
 ;;; put (require (distinct? ...)) at the bottem of all other requires
 (define (distinct? lst)
   (cond ((null? lst) true)

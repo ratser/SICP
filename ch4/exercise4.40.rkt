@@ -1,21 +1,12 @@
 ;;; exercise 4.40
-(define (require p) (if (not p) (amb)))
-(define (distinct? lst)
-  (cond ((null? lst) true)
-        ((null? (cdr lst)) true)
-        ((member? (car lst) (cdr lst)) false)
-        (else (distinct? (cdr lst)))))
-(define (member? item lst)
-  (cond ((null? lst) false)
-        ((equal? item (car lst)) true)
-        (else (member? item (cdr lst)))))
+
 (define (multiple-dewelling)
   (let ((fletcher (amb 2 3 4))
         (cooper (amb 2 3 4 5)))
     (require (not (= (abs (- fletcher cooper)) 1)))
     (let ((miller (amb 1 2 3 4 5)))
       (require (> miller cooper))
-      (let ((simth (amb 1 2 3 4 5)))
+      (let ((smith (amb 1 2 3 4 5)))
         (require (not (= (abs (- smith fletcher)) 1)))
         (let ((baker (amb 1 2 3 4)))
           (require
