@@ -1,7 +1,7 @@
 ;;; exercise 4.44
 
 ;;; the solution below runs slowly on amb-interpretor
-;;; And I have no idea how to improve it just now
+;;; And I have no idea how to improve it currently
 (define (queens board-size)
   ;;represent board
   (define empty-board '())
@@ -15,6 +15,8 @@
     (car pos))
   (define (col-index pos)
     (cdr pos))
+  (define (add-pos pos board)
+    (cons pos board))
   (define (safe? pos board)
     (if (empty-board? board)
         true
@@ -35,7 +37,7 @@
         (let ((next-pos (cons (amb-enum n board-size)
                               (amb-enum 1 board-size))))
           (require (safe? next-pos board))
-          (board-gen (+ n 1) (cons next-pos board)))))
+          (board-gen (+ n 1) (add-pos next-pos board)))))
   (board-gen 1 empty-board))
           
         
