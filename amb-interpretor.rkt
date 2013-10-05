@@ -151,6 +151,16 @@
                             (fail2)))))
              fail))))
 
+(define (analyze-permanent-assignment exp)
+  (let ((var (assignment-variable exp))
+        (vproc (analyze (assignment-value exp))))
+    (lambda (env succeed fail)
+      (vproc env
+             (lambda (val fail2)
+                 (set-variable-value! var val env)
+                 (succeed 'ok fail2))
+             fail))))
+
 (define (analyze-begin exp)
   (analyze-sequence (begin-actions exp)))
 
@@ -221,6 +231,17 @@
                  (shuffle 
                   (mlist->list 
                    (amb-choices exp)))))))
+;;;exercise 4.52
+(define (analyze-if-fail exp)
+  (let ((fproc (analyze (if-fail-exp exp)))
+        (sproc (analyze (if-fail-alternative exp))))
+    (lambda (env succeed fail)
+      (fproc env
+             succeed
+             (lambda ()
+               (sproc env
+                      succeed
+                      fail))))))
 
 ;;; execute-application procedure, which is analog of apply
 
@@ -266,7 +287,9 @@
 (put-analyze 'letrec analyze-letrec)
 (put-analyze 'amb analyze-amb)
 (put-analyze 'ramb analyze-ramb)
-
+(put-analyze 'permanent-set! analyze-permanent-assignment)
+(put-analyze 'if-fail analyze-if-fail)
+ 
 ;;; represent expressions
 (define (get-tag exp) (car exp))
 (define (self-evaluating? exp)
@@ -285,6 +308,12 @@
       'false))
 (define (make-if predicate consequent alternative)
   (list 'if predicate consequent alternative))
+;;; exercise 4.52
+(define (if-fail-exp exp)
+  (cadr exp))
+(define (if-fail-alternative exp)
+  (caddr exp))
+
 (define (assignment-variable exp)
   (cadr exp))
 (define (assignment-value exp)
