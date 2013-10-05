@@ -1,7 +1,8 @@
 #lang r5rs
 (#%require "error.rkt")
 (#%require "table.rkt")
-;;; separating syntactic analysis form execution
+(#%require racket/list)  ; include procedure shuffle for exercise 4.50
+(#%require racket/mpair) ; include procedures mlist->list and list-> mlsit for exercise 4.50
 
 ;;; table for installing syntactic analysis procedures of special forms
 (define special-form-table (make-anyD-table))
@@ -213,6 +214,14 @@
                              (try-next (cdr choices))))))
       (try-next cprocs))))
 
+(define (analyze-ramb exp)
+  (analyze-amb
+   (cons 'ramb
+         (list->mlist 
+                 (shuffle 
+                  (mlist->list 
+                   (amb-choices exp)))))))
+
 ;;; execute-application procedure, which is analog of apply
 
 ;(define (execute-application proc args)
@@ -256,6 +265,7 @@
 ;(put-analyze 'make-unbound! analyze-make-unbound!)
 (put-analyze 'letrec analyze-letrec)
 (put-analyze 'amb analyze-amb)
+(put-analyze 'ramb analyze-ramb)
 
 ;;; represent expressions
 (define (get-tag exp) (car exp))
