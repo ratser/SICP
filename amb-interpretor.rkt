@@ -242,7 +242,16 @@
                (sproc env
                       succeed
                       fail))))))
-
+;;; exercise 4.54
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+    (lambda (env succeed fail)
+      (pproc env
+             (lambda (pred-value fail2)
+               (if (not (true? pred-value))
+                   (fail2)
+                   (succeed 'ok fail2)))
+             fail))))
 ;;; execute-application procedure, which is analog of apply
 
 ;(define (execute-application proc args)
@@ -289,7 +298,8 @@
 (put-analyze 'ramb analyze-ramb)
 (put-analyze 'permanent-set! analyze-permanent-assignment)
 (put-analyze 'if-fail analyze-if-fail)
- 
+(put-analyze 'require analyze-require)
+
 ;;; represent expressions
 (define (get-tag exp) (car exp))
 (define (self-evaluating? exp)
@@ -533,7 +543,7 @@
                            (letrec-body exp))))
 
 (define (amb-choices exp) (cdr exp))
-
+(define (require-predicate exp) (cadr exp))
 ;;; Evaluator data structure ;;;
 (define (true? x)
   (not (eq? x 'false)))
