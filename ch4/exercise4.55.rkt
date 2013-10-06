@@ -1,6 +1,6 @@
 ;;; exercise 4.55
 ;a
-(supervisor ?people (Ben Bitdiddle))
+(supervisor ?people (Bitdiddle Ben))
 ;b
 (job ?name (Accounting . ?jobs))
 ;c

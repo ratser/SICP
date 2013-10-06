@@ -1,9 +1,9 @@
 ;;; exercise 4.46
 ;a
-(and (supervisor ?name (Ben Bitdiddle))
+(and (supervisor ?name (Bitdiddle Ben))
      (address ?name ?addr))
 ;b
-(and (salary (Ben Bitdiddle) ?bens)
+(and (salary (Bitdiddle Ben) ?bens)
      (salary ?names ?others)
      (lisp-value < ?others ?bens))
 ;c
