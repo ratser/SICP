@@ -1,6 +1,7 @@
 #lang r5rs
 (#%require "stream.rkt")
 (#%require "table.rkt")
+(#%require "error.rkt")
 ;;;table for special forms
 (define query-special-form-table (make-anyD-table))
 (define (get-query-proc type-tag)
@@ -58,3 +59,90 @@
     (if qproc
         (qproc (contents query) frame-stream)
         (simple-query query frame-stream))))
+
+;;; simple query
+(define (simple-query query-pattern frame-stream)
+  (stream-flatmap
+   (lambda (frame)
+     (stream-append-delayed
+      (find-assertions query-pattern frame)
+      (delay (apply-rules query-pattern frame))))
+   frame-stream))
+;;; compound query
+(define (conjoin conjuncts frame-stream)
+  (if (empty-conjunction? conjuncts)
+      frame-stream
+      (conjoin (rest-conjuncts conjuncts)
+               (qeval (first-conjunct conjuncts)
+                      frame-stream))))
+(put-query-proc 'and conjoin)
+
+(define (disjoin disjuncts frame-stream)
+  (if (empty-disjunction? disjuncts)
+      the-empty-stream
+      (interleave-delayed
+       (qeval (first-disjunct disjuncts) frame-stream)
+       (delay (disjoin (rest-disjuncts disjuncts)
+                       frame-stream)))))
+(put-query-proc 'or disjoin)
+
+(define (negate operands frame-stream)
+  (stream-flatmap
+   (lambda (frame)
+     (if (stream-null? (qeval (negated-query operands)
+                              (singleton-stream frame)))
+         (sigleton-stream frame)
+         the-empty-stream))
+   frame-stream))
+(put-query-proc 'not negate)
+
+(define (lisp-value call frame-stream)
+  (stream-flatmap
+   (lambda (frame)
+     (if (execute
+          (instantiates
+           call
+           frame
+           (lambda (v f)
+             (error "Unknown pat var -- LISP-VALUE" v))))
+         (singleton-stream frame)
+         the-empty-stream))
+   frame-stream))
+(put-query-proc 'lisp-value lisp-value)
+(define (execute exp)
+  (apply (eval (predicate exp) (scheme-report-environment 5)) 
+         (args exp)))
+
+(define (always-true ignore frame-stream) frame-stream)
+(put-query-proc 'always-true 'qeval always-true)
+
+;;; find assertions
+(define (find-assertions pattern frame)
+  (stream-flatmap (lambda (datum)
+                    (check-an-assertion datum pattern frame))
+                  (fetch-assertions pattern frame)))
+(define (check-an-assertion assertion query-pat query-frame)
+  (let ((match-result
+         (pattern-match query-pat assertion query-frame)))
+    (if (eq? match-result 'failed)
+        the-empty-stream
+        (singleton-stream match-result))))
+
+(define (pattern-match pat dat frame)
+  (cond ((eq? frame 'failed) 'failed)
+        ((equal? pat dat) frame)
+        ((var? pat) (extend-if-consistent pat dat frame))
+        ((and (pair? pat) (pair? dat))
+         (pattern-match (cdr pat)
+                        (cdr dat)
+                        (pattern-match (car pat)
+                                       (car dat)
+                                       frame)))
+        (else 'failed)))
+(define (extend-if-consistent var dat frame)
+  (let ((binding (binding-in-frame var frame)))
+    (if binding
+        (pattern-match (binding-value binding) dat frame)
+        (extend var dat frame))))
+
+              
