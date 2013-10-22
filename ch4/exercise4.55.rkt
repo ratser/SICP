@@ -2,6 +2,6 @@
 ;a
 (supervisor ?people (Bitdiddle Ben))
 ;b
-(job ?name (Accounting . ?jobs))
+(job ?name (accounting . ?jobs))
 ;c
 (address ?name (Slumerville . ?addr))

@@ -10,7 +10,12 @@
   ((query-special-form-table 'insert!)
    (list type-tag)
    proc))
-
+;;;table for data base
+(define data-base (make-2D-table))
+(define (get key1 key2)
+  ((data-base 'lookup) key1 key2))
+(define (put key1 key2 value)
+  ((data-base 'insert!) key1 key2 value))
 ;;;Driver loop
 (define input-prompt ";;; Query input:")
 (define output-prompt ";;; Query results:")
@@ -26,6 +31,7 @@
           (else
            (newline)
            (display output-prompt)
+           (newline)
            (display-stream
             (stream-map
              (lambda (frame)
@@ -91,7 +97,7 @@
    (lambda (frame)
      (if (stream-null? (qeval (negated-query operands)
                               (singleton-stream frame)))
-         (sigleton-stream frame)
+         (singleton-stream frame)
          the-empty-stream))
    frame-stream))
 (put-query-proc 'not negate)
@@ -146,7 +152,7 @@
         (extend var dat frame))))
 
 ;;; apply rules
-(define (apply-rules rules pattern frame)
+(define (apply-rules pattern frame)
   (stream-flatmap
    (lambda (rule)
      (apply-a-rule rule pattern frame))
@@ -171,7 +177,7 @@
             (else exp)))
     (tree-walk rule)))
 
-(define (unify-match p1 p1 frame)
+(define (unify-match p1 p2 frame)
   (cond ((eq? frame 'failed) 'failed)
         ((equal? p1 p2) frame)
         ((var? p1) (extend-if-possible p1 p2 frame))
@@ -206,7 +212,7 @@
                      #f))))
           ((pair? e)
            (or (tree-walk (car e)) (tree-walk (cdr e))))
-          (else false)))
+          (else #f)))
   (tree-walk exp))
 
 ;;; data base
@@ -272,5 +278,97 @@
     (if (var? key) '? key)))
 (define (use-index? pat)
   (constant-symbol? (car pat)))
+
+;;;query syntax procedures
+(define (type exp)
+  (if (pair? exp)
+      (car exp)
+      (error "Unknown expression TYPE" exp)))
+(define (contents exp)
+  (if (pair? exp)
+      (cdr exp)
+      (error "Unknown expression CONTENTS" exp)))
+
+(define (tagged-list? p tag)
+  (if (pair? p)
+      (eq? (car p) tag)
+      #f))
+
+(define (assertion-to-be-added? exp)
+  (eq? (type exp) 'assert!))
+(define (add-assertion-body exp)
+  (car (contents exp)))
+
+(define (empty-conjunction? exps)
+  (null? exps))
+(define (first-conjunct exps) (car exps))
+(define (rest-conjuncts exps) (cdr exps))
+(define (empty-disjunction? exps) 
+        (null? exps))
+(define (first-disjunct exps) (car exps))
+(define (rest-disjuncts exps) (cdr exps))
+(define (negated-query exps) (car exps))
+(define (predicate exps) (car exps))
+(define (args exps) (cdr exps))
+
+(define (rule? statement)
+  (tagged-list? statement 'rule))
+(define (conclusion rule) (cadr rule))
+(define (rule-body rule)
+  (if (null? (cddr rule))
+      '(always-true)
+      (caddr rule)))
+
+(define (query-syntax-process exp)
+  (map-over-symbols expand-question-mark exp))
+(define (map-over-symbols proc exp)
+  (cond ((pair? exp)
+         (cons (map-over-symbols proc (car exp))
+               (map-over-symbols proc (cdr exp))))
+        ((symbol? exp) (proc exp))
+        (else exp)))
+(define (expand-question-mark symbol)
+  (let ((chars (symbol->string symbol)))
+    (if (string=? (substring chars 0 1) "?")
+        (list '?
+              (string->symbol
+               (substring chars 1 (string-length chars))))
+        symbol)))
+(define (var? exp)
+  (tagged-list? exp '?))
+(define (constant-symbol? exp)
+  (symbol? exp))
+
+(define rule-counter 0)
+(define (new-rule-application-id)
+  (set! rule-counter (+ 1 rule-counter))
+  rule-counter)
+(define (make-new-variable var rule-application-id)
+  (cons '?
+        (cons rule-application-id (cdr var))))
+
+(define (contract-question-mark variable)
+  (string->symbol
+   (string-append "?"
+                  (if (number? (cadr variable))
+                      (string-append (symbol->string (caddr variable))
+                                     "-"
+                                     (number->string (cadr variable)))
+                      (symbol->string (cadr variable))))))
+
+;;; frames and bindings
+(define (make-binding variable value)
+  (cons variable value))
+(define (binding-variable binding)
+  (car binding))
+(define (binding-value binding)
+  (cdr binding))
+(define (binding-in-frame variable frame)
+  (assoc variable frame))
+(define (extend variable value frame)
+  (cons (make-binding variable value) frame))
+
+(query-driver-loop)
+
              
 
