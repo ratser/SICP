@@ -368,6 +368,24 @@
 (define (extend variable value frame)
   (cons (make-binding variable value) frame))
 
+;;; exercise 4.75
+(define (uniquely-asserted uniquely-contents frame-stream)
+  (stream-flatmap
+   (lambda (frame)
+     (let ((result 
+            (qeval (uniquely-query uniquely-contents) (singleton-stream frame))))
+       (if (singleton-stream? result)
+           result
+           the-empty-stream)))
+   frame-stream))
+(put-query-proc 'unique uniquely-asserted)
+(define (singleton-stream? stream)
+  (cond ((stream-null? stream) #f)
+        ((stream-null? (stream-cdr stream)) #t)
+        (else #f)))
+(define (uniquely-query exp) (car exp))
+
+
 (query-driver-loop)
 
              
